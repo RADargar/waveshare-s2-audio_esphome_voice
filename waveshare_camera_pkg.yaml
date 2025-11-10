@@ -81,7 +81,7 @@ globals:
 esp32_camera:
   name: "ESP32 Camera"
   id: seeed_camera
-  data_pins: $data_pins
+  data_pins: $camera_data_pins
   vsync_pin: $camera_vsync_pin
   href_pin: $camera_href_pin
   pixel_clock_pin: $camera_pclk_pin
