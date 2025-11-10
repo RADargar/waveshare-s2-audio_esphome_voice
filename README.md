@@ -120,6 +120,7 @@ packages:
 ```
 
 General TODO/wishlist for the device.
+* filter speaker output from mic input using IDF-SR library (IN PROGRESS!)
 * UI: disable LEDS
 * UI: disable Voice/wake-word
 * UI/ESP: Forward output to external speaker (music assistant announcement support?)
