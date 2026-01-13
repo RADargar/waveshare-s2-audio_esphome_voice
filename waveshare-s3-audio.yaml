@@ -1,5 +1,5 @@
 substitutions:
-  device_name: esp32-audio-s3
+  device_name: esp32-audio-s3-1
   
   # Phases of the Voice Assistant
   voice_assist_idle_phase_id: '1' # ready to be triggered by a wake word
@@ -27,8 +27,8 @@ substitutions:
   #WORKING
   which_mic: 0 #0=left, 1=right, 2=stereo
   i2s_sample_rate: 16000 # Works as in sync with microphone (mic must have 16000 for voice assistant)
-  i2s_bits_per_sample: 32
-  #i2s_bits_per_sample: 16
+  #i2s_bits_per_sample: 32
+  i2s_bits_per_sample: 16
   i2s_mode_mic: secondary
   i2s_mode_speaker: secondary
   i2s_use_apll: true
@@ -36,7 +36,7 @@ substitutions:
   i2s_bps_mic: 16bit
   i2s_mclk_multiple: 256 # 128, 256, 384, 512
 
-  hidden_ssid: "false"
+  hidden_ssid: "true"
   led_num: '7' # WS2812 ring leds
 
 # Pre-configured camera code
@@ -50,7 +50,7 @@ substitutions:
 
 esphome:
   name: $device_name
-  friendly_name: Waveshare-Audio-3
+  friendly_name: Family Room
   min_version: 2025.8.0
   on_boot:
     - priority: -100
@@ -231,26 +231,54 @@ light:
     num_leds: ${led_num}
     chipset: WS2812
     rgb_order: RGB
-    default_transition_length: 150ms
+    default_transition_length: 10ms
     effects:
       - pulse:
-          name: "Pulse Slow"
-          transition_length: 1000ms
-          update_interval: 16ms
-      - pulse:
-          name: "Pulse Medium"
-          transition_length: 600ms
-          update_interval: 16ms
-      - pulse:
-          name: "Pulse Fast"
-          transition_length: 300ms
-          update_interval: 16ms
+          name: Pulse
+          transition_length: 0.5s
+          update_interval: 0.5s
+          min_brightness: 30%
+          max_brightness: 100%
       - addressable_rainbow:
           name: "Rainbow Slow"
-          speed: 6
+          speed: 9
           width: 7
       - addressable_color_wipe:
           name: "Wipe"
+          colors:
+          - red: 50%
+            green: 0%
+            blue: 100%
+            num_leds: 6
+            gradient: true
+          - red: 0%
+            green: 0%
+            blue: 0%
+            num_leds: 1
+      - addressable_color_wipe:
+          name: "thinking Wipe"
+          colors:
+          - red: 100%
+            green: 50%
+            blue: 0%
+            num_leds: 6
+            gradient: true
+          - red: 0%
+            green: 0%
+            blue: 0%
+            num_leds: 1
+      - addressable_color_wipe:
+          name: "response Wipe"
+          colors:
+          - red: 100%
+            green: 0%
+            blue: 50%
+            num_leds: 6
+            gradient: true
+          - red: 0%
+            green: 0%
+            blue: 0%
+            num_leds: 1
 
 i2s_audio:
   - id: i2s_output
@@ -279,11 +307,6 @@ audio_adc:
     bits_per_sample: $i2s_bps_mic
     #bits_per_sample: "${i2s_bits_per_sample}bit"
 
-# external_components:
-#   - source:
-#       type: local
-#       path: components
-#     components: [ es8311 ]
 external_components:
   - source:
       type: git
@@ -421,7 +444,9 @@ media_player:
       - id: timer_finished_sound
         file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
       - id: wake_word_triggered_sound
-        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/wake_word_triggered.flac
+        file: /config/listening.flac
+      - id: white_noise
+        file: /config/white.flac
       - id: error_cloud_expired
         file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/error_cloud_expired.mp3
       # - id: center_button_press_sound
@@ -442,6 +467,7 @@ media_player:
 voice_assistant:
   id: va
   microphone:
+    id: va_mic
     microphone: i2s_mics
     #channels: 1 #Right
     #channels: 0 #Left
@@ -449,7 +475,6 @@ voice_assistant:
   media_player: external_media_player
   micro_wake_word: mww
   use_wake_word: false
-  noise_suppression_level: 0 #2 #0
   auto_gain: 0 dbfs
   volume_multiplier: 1
   on_client_connected:
@@ -600,7 +625,6 @@ micro_wake_word:
   microphone:
     microphone: i2s_mics
     channels: $which_mic
-    #gain_factor: 4
   stop_after_detection: false
   models:
     - model: https://github.com/kahrendt/microWakeWord/releases/download/okay_nabu_20241226.3/okay_nabu.json
@@ -610,6 +634,10 @@ micro_wake_word:
       id: kenobi
     - model: hey_jarvis
       id: hey_jarvis
+    - model: alexa
+      id: alexa
+    - model: /config/cortana.json
+      id: cortana
     #- model: hey_mycroft
     #  id: hey_mycroft
     - model: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.json
@@ -725,7 +753,7 @@ script:
 
   # Minimal dispatcher for LEDs: off / solid / built-in effects
   - id: led_set_effect
-    mode: restart
+    mode: single
     parameters:
       effect: std::string
       r: float
@@ -765,7 +793,7 @@ script:
 
   # Single LED state machine (small footprint)
   - id: control_leds
-    mode: single
+    mode: restart
     then:
       - lambda: |-
           const bool wifi_connected = id(wifi_id).is_connected();
@@ -789,50 +817,49 @@ script:
           };
 
           if (improv_ble) {                          // Provisioning
-            set("Pulse Medium", 1.0, 0.89, 0.71);    // warm white
+            set("Pulse", 1.0, 0.89, 0.71);    // warm white
             return;
           }
           if (init_progress) {                       // Boot/init
-            //if (wifi_connected) set("Pulse Fast", 0.09, 0.73, 0.95); else set("Pulse Slow", 0.09, 0.73, 0.95);
-            if (wifi_connected) set("Rainbow Slow", 0.9, 0.1, 0.85); else set("Rainbow Slow", 1.0, 0.1, 0.1);
-            id(play_sound).execute(1, id(wake_word_triggered_sound)); //TEST
+            //if (wifi_connected) set("wipe", 0.09, 0.73, 0.95); else set("wipe", 0.09, 0.73, 0.95);
+            id(play_sound).execute(1, id(white_noise)); //TEST
             return;
           }
           if (!wifi_connected || !api_connected) {   // HA disconnected
-            set("Pulse Medium", 1.0, 0.0, 0.0);
+            set("Pulse", 1.0, 0.0, 0.0);
             return;
           }
           if (ringing) {                             // Timer ringing
-            set("Pulse Fast", 0.6, 0.0, 0.6);
+            set("Pulse", 0.6, 0.0, 0.6);
             return;
           }
 
           // Voice assistant phases
           switch (phase) {
             case ${voice_assist_waiting_for_command_phase_id}: // just woke
-              set("solid", 0.5, 0.0, 0.5);  // calm solid violet
+              set("Wipe", 0.5, 0.0, 1.0);  // calm solid violet
               return;
             case ${voice_assist_listening_for_command_phase_id}:
-              set("Pulse Medium", 0.8, 0.0, 0.8);
+              set("thinking Wipe", 0.0, 0.0, 0.0);
               return;
             case ${voice_assist_thinking_phase_id}:
-              set("Pulse Slow", 0.6, 0.0, 0.6);
+              set("response Wipe", 0.0, 0.0, 0.0);
               return;
             case ${voice_assist_replying_phase_id}:
-              set("Wipe", 0.6, 0.0, 0.6);
+              set("response Wipe", 0.0, 0.0, 0.0);
               return;
             case ${voice_assist_error_phase_id}:
-              set("Pulse Fast", 1.0, 0.0, 0.0);
+              set("Pulse", 1.0, 0.0, 0.0);
               return;
             case ${voice_assist_not_ready_phase_id}:
-              set("Pulse Slow", 1.0, 0.0, 0.0);
+              set("Pulse", 1.0, 0.0, 0.0);
               return;
             default: break;
           }
 
           // Timers ticking (no bar, minimal footprint)
           if (timers_active) {
-            set("Pulse Slow", 0.6, 0.0, 0.6);
+            set("Pulse", 0.6, 0.0, 0.6);
             return;
           }
 
@@ -849,7 +876,7 @@ script:
           red: 0.0
           green: 1.0
           blue: 0.0
-          effect: "Pulse Fast"
+          effect: "Pulse"
       - lambda: |-
           ESP_LOGD("led", "volume_changed: flash green"); //DEBUG
       - delay: 1.2s
@@ -1172,15 +1199,47 @@ number:
     name: "Mic Gain (ES7210 dB)"
     entity_category: config
     min_value: 0
-    max_value: 42
-    step: 1
+    max_value: 36
+    step: 3
     restore_value: true
-    initial_value: 24
+    initial_value: 32
     set_action:
       - lambda: |-
           id(adc_mic).set_mic_gain(x);   // adjust PGA on the fly
       - logger.log:
           format: "[MIC] Set ES7210 gain to %.0f dB"
+          args: ["x"]
+
+  - platform: template
+    id: mic_gain_factor
+    name: "Gain Factor"
+    entity_category: config
+    min_value: 1
+    max_value: 64
+    step: 1
+    restore_value: true
+    initial_value: 32
+    set_action:
+      - lambda: |-
+          id(va_mic).set_gain_factor(x);   // adjust gain factor on the fly
+      - logger.log:
+          format: "[MIC] Set gain factor to %.0f"
+          args: ["x"]
+
+  - platform: template
+    id: noise_suppression
+    name: "Noise Suppression"
+    entity_category: config
+    min_value: 0
+    max_value: 4
+    step: 1
+    restore_value: true
+    initial_value: 4
+    set_action:
+      - lambda: |-
+          id(va).set_noise_suppression_level(x);   // adjust noise suppression on the fly
+      - logger.log:
+          format: "[MIC] Set suppression to %.0f"
           args: ["x"]
 
   - platform: template
