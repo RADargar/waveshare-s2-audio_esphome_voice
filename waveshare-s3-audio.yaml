@@ -1,5 +1,6 @@
 substitutions:
   device_name: esp32-audio-s3
+  friendly: Waveshare-Audio-3
   
   # Phases of the Voice Assistant
   voice_assist_idle_phase_id: '1' # ready to be triggered by a wake word
@@ -50,7 +51,7 @@ substitutions:
 
 esphome:
   name: $device_name
-  friendly_name: Waveshare-Audio-3
+  friendly_name: $friendly
   min_version: 2025.8.0
   on_boot:
     - priority: -100
@@ -235,14 +236,20 @@ light:
     effects:
       - pulse:
           name: "Pulse Slow"
+          min_brightness: 30%
+          max_brightness: 100%
           transition_length: 1000ms
           update_interval: 16ms
       - pulse:
           name: "Pulse Medium"
+          min_brightness: 30%
+          max_brightness: 100%
           transition_length: 600ms
           update_interval: 16ms
       - pulse:
           name: "Pulse Fast"
+          min_brightness: 30%
+          max_brightness: 100%
           transition_length: 300ms
           update_interval: 16ms
       - addressable_rainbow:
@@ -442,6 +449,7 @@ media_player:
 voice_assistant:
   id: va
   microphone:
+    id: va_mic
     microphone: i2s_mics
     #channels: 1 #Right
     #channels: 0 #Left
@@ -1181,6 +1189,38 @@ number:
           id(adc_mic).set_mic_gain(x);   // adjust PGA on the fly
       - logger.log:
           format: "[MIC] Set ES7210 gain to %.0f dB"
+          args: ["x"]
+          
+    - platform: template
+    id: va_gain_factor
+    name: "Gain Factor"
+    entity_category: config
+    min_value: 1
+    max_value: 64
+    step: 1
+    restore_value: true
+    initial_value: 32
+    set_action:
+      - lambda: |-
+          id(va_mic).set_gain_factor(x);   // adjust gain factor on the fly
+      - logger.log:
+          format: "[MIC] Set gain factor to %.0f"
+          args: ["x"]
+
+  - platform: template
+    id: va_noise_suppression
+    name: "Noise Suppression"
+    entity_category: config
+    min_value: 0
+    max_value: 4
+    step: 1
+    restore_value: true
+    initial_value: 4
+    set_action:
+      - lambda: |-
+          id(va).set_noise_suppression_level(x);   // adjust noise suppression on the fly
+      - logger.log:
+          format: "[MIC] Set suppression to %.0f"
           args: ["x"]
 
   - platform: template
