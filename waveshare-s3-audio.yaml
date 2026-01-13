@@ -1,5 +1,6 @@
 substitutions:
   device_name: esp32-audio-s3
+  friendly: Waveshare Audio
   
   # Phases of the Voice Assistant
   voice_assist_idle_phase_id: '1' # ready to be triggered by a wake word
@@ -50,7 +51,7 @@ substitutions:
 
 esphome:
   name: $device_name
-  friendly_name: Waveshare Audio
+  friendly_name: $friendly
   min_version: 2025.8.0
   on_boot:
     - priority: -100
@@ -444,9 +445,9 @@ media_player:
       - id: timer_finished_sound
         file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/timer_finished.flac
       - id: wake_word_triggered_sound
-        file: /config/listening.flac
+        file: https://github.com/RADargar/waveshare-s2-audio_esphome_voice/raw/refs/heads/main/audio/listening.flac
       - id: white_noise
-        file: /config/white.flac
+        file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/error_cloud_expired.mp3
       - id: error_cloud_expired
         file: https://github.com/esphome/home-assistant-voice-pe/raw/dev/sounds/error_cloud_expired.mp3
       # - id: center_button_press_sound
