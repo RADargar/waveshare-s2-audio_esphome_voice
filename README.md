@@ -1,3 +1,11 @@
+Welcome. This is my personal fork of the waveshare s2 audio config provided by sw3Dan. There are some minor changes that have worked as improvements for me, but the base code is largely unchanged. Here are the fixes I've added:
+
+- Added more functionality to the LED section. Fixed the pulse setting, where without a minimum and maximum it would only show a solid color due to min/max brightness. A personal preference, but added different colors for each phase of the voice assistant response (using swirl effects because... well I thought it looked pretty). Mostly as an indicator of when your voice is being picked up and cut off by the VAD as well as showing how long home assistant was taking to answer.
+- While there is a mic gain setting in the main, adjusting gain_factor for va helped with comprehension in home assistant. At default (1) audio files were inaudible, and even though whisper (I'm using wyoming-small-en-int-8) could process them, adjusting and using debugging in home assistant let me get a better signal to noise ratio for picking up requests further away.
+- Added a slider in home assistant to adjust the va gain_factor, as well as noise_suppression_level. Did not add similar settings to the microwakeword, as it appears to be functioning without modifications, but I might experiment and commit a change. 
+
+sw3Dan's info from the main included below:
+
 ESPHome configuration for enabeling WAVESHARE-S3-AUDIO-BOARD (https://www.waveshare.com/esp32-s3-audio-board.htm)
 to be used as a HomeAssistant Voice Satellite. Features such as simultanious music/and announcements and
 continious on-board wake-word detection.
